@@ -1,7 +1,9 @@
 package com.StardewValley.modinstaller;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 
 import androidx.documentfile.provider.DocumentFile;
 
@@ -17,10 +19,8 @@ import java.util.Stack;
 
 
 public class UnZipper {
-    public final int PROGRESS_UPDATE = 1;
-    public final int TOTAL_FILES = 2;
-
     public void unzip(InputStream inputStream, String destDir, Handler handler) throws IOException {
+        int count = 0;
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));
         ZipEntry zipEntry = zis.getNextEntry();
@@ -39,6 +39,15 @@ public class UnZipper {
                 outputStream.close();
             }
             zipEntry = zis.getNextEntry();
+            count++;
+            if (count % 10 == 0) {
+                Bundle b = new Bundle();
+                Message m = new Message();
+                m.what = MainActivity.PROGRESS_UPDATE;
+                b.putInt("PROGRESS", count);
+                m.setData(b);
+                handler.sendMessage(m);
+            }
         }
         zis.closeEntry();
         zis.close();
@@ -46,7 +55,7 @@ public class UnZipper {
     }
 
     public void unzipToDocumentFile(Context context, InputStream inputStream, DocumentFile destDir, Handler handler) throws IOException {
-
+        int count = 0;
         Stack<DocumentFile> DFstack = new Stack<>();
         Stack<String> nameStack = new Stack<>();
         byte[] buffer = new byte[1024 * 20];
@@ -86,25 +95,18 @@ public class UnZipper {
                 outputStream.close();
             }
             zipEntry = zis.getNextEntry();
+            count++;
+            if (count % 10 == 0) {
+                Bundle b = new Bundle();
+                Message m = new Message();
+                m.what = MainActivity.PROGRESS_UPDATE;
+                b.putInt("PROGRESS", count);
+                m.setData(b);
+                handler.sendMessage(m);
+            }
         }
         zis.closeEntry();
         zis.close();
         inputStream.close();
-    }
-
-    public int countFiles(InputStream inputStream) throws IOException {
-
-        int count = 0;
-        ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));
-        ZipEntry zipEntry;
-        while ((zipEntry = zis.getNextEntry()) != null) {
-            // 获取条目的名称
-            String entryName = zipEntry.getName();
-            count++;
-            // 关闭当前条目
-            zis.closeEntry();
-        }
-        zis.close();
-        return count;
     }
 }
