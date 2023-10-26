@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 
 import androidx.documentfile.provider.DocumentFile;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,9 +17,10 @@ import java.util.Stack;
 
 
 public class UnZipper {
-    public static final int PROGRESS_UPDATE = 1;
-    public static final int TOTAL_FILES = 2;
-    public static void unzip(InputStream inputStream, String destDir, Handler handler) throws IOException {
+    public final int PROGRESS_UPDATE = 1;
+    public final int TOTAL_FILES = 2;
+
+    public void unzip(InputStream inputStream, String destDir, Handler handler) throws IOException {
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));
         ZipEntry zipEntry = zis.getNextEntry();
@@ -43,11 +45,11 @@ public class UnZipper {
         inputStream.close();
     }
 
-    public static void unzipToDocumentFile(Context context, InputStream inputStream, DocumentFile destDir, Handler handler) throws IOException {
+    public void unzipToDocumentFile(Context context, InputStream inputStream, DocumentFile destDir, Handler handler) throws IOException {
 
         Stack<DocumentFile> DFstack = new Stack<>();
         Stack<String> nameStack = new Stack<>();
-        byte[] buffer = new byte[1024 * 10];
+        byte[] buffer = new byte[1024 * 20];
         ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));
         ZipEntry zipEntry = zis.getNextEntry();
         boolean firstRun = false;
@@ -90,7 +92,7 @@ public class UnZipper {
         inputStream.close();
     }
 
-    public static int countFiles(InputStream inputStream) throws IOException {
+    public int countFiles(InputStream inputStream) throws IOException {
 
         int count = 0;
         ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));

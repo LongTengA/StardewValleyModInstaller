@@ -1,26 +1,24 @@
 plugins {
     id 'com.android.application'
 }
-
 android {
     namespace 'com.StardewValley.modinstaller'
     compileSdk 33
-
     defaultConfig {
         applicationId "com.StardewValley.modinstaller"
         minSdk 28
         targetSdk 33
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    buildTypes {
 
+    }
     sourceSets {
         main {
             assets.srcDirs = ['src/main/assets', 'C:/Users/Administrator/Desktop/mod2/Mod.zip']
@@ -30,8 +28,9 @@ android {
         from 'C:/Users/Administrator/Desktop/mod2/Mod.zip' // 指定文件所在的目录
         into 'src/main/assets' // assets 目录
     }
-
+    preBuild.dependsOn copyAssets
 }
+
 
 dependencies {
 

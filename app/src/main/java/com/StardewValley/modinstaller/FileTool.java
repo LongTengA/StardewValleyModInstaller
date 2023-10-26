@@ -5,27 +5,30 @@ import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+
 import android.os.Handler;
 import android.os.Message;
+
 import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 
 
 public class FileTool {
-    static String path_to_mods = "/storage/emulated/0/Android/data/com.zane.stardewvalley/files/Mods";
-    static String path_to_data = "/storage/emulated/0/Android/data/com.zane.stardewvalley";
-    static String path_to_stardew = "/storage/emulated/0/StardewValley";
-    private static Handler handler = new Handler(Looper.myLooper()) {
+    final String path_to_mods = "/storage/emulated/0/Android/data/com.zane.stardewvalley/files/Mods";
+    final String path_to_data = "/storage/emulated/0/Android/data/com.zane.stardewvalley";
+    final String path_to_stardew = "/storage/emulated/0/StardewValley";
+    private Handler handler = new Handler(Looper.myLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
         }
     };
 
-    static boolean writeToStardewalleyFolder(Context context) {
+    public boolean writeToStardewalleyFolder(Context context) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -37,7 +40,7 @@ public class FileTool {
                     if (p.mkdir()) {
                         AssetManager assetManager = context.getAssets();
                         InputStream inputStream = assetManager.open("StardewValley.zip");
-                        UnZipper.unzip(inputStream, path_to_stardew, handler);
+                        new UnZipper().unzip(inputStream, path_to_stardew, handler);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -47,14 +50,13 @@ public class FileTool {
         return true;
     }
 
-    static void writeToDataFolder(Context context) {
-
+    public void writeToDataFolder(Context context) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     AssetManager assetManager = context.getAssets();
-                    InputStream inputStream = assetManager.open("做坏狮Lion.zip");
+                    InputStream inputStream = assetManager.open("Mod.zip");
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
                         Uri uri = Uri.parse(changeToUri(path_to_data));
                         DocumentFile documentFile = DocumentFile.fromTreeUri(context, uri);
@@ -68,9 +70,9 @@ public class FileTool {
                                 documentFile = documentFile.findFile(s);
                             }
                         }
-                        UnZipper.unzipToDocumentFile(context, inputStream, documentFile, handler);
+                        new UnZipper().unzipToDocumentFile(context, inputStream, documentFile, handler);
                     } else {
-                        UnZipper.unzip(inputStream, path_to_mods, handler);
+                        new UnZipper().unzip(inputStream, path_to_mods, handler);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -96,15 +98,13 @@ public class FileTool {
 
     public static void deleteDocumentFileRecursively(Context context, DocumentFile documentFile) {
         if (documentFile == null || !documentFile.exists()) {
-            return; // 无效的文件夹，或文件夹不存在
+            return;
         }
         if (documentFile.isDirectory()) {
-            // 如果是文件夹，遍历并递归删除子项
             for (DocumentFile childFile : documentFile.listFiles()) {
                 deleteDocumentFileRecursively(context, childFile);
             }
         }
-        // 删除当前文件或文件夹
         documentFile.delete();
     }
 

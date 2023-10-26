@@ -36,9 +36,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             PermissionTool.reqPermission(this);
         } else if (v.getId() == R.id.button1) {
             if (PermissionTool.isGranted) {
-                Toast.makeText(this, "请不要退出此界面，保持5分钟！", Toast.LENGTH_LONG).show();
-                FileTool.writeToStardewalleyFolder(this);
-                FileTool.writeToDataFolder(this);
+                new FileTool().writeToStardewalleyFolder(this);
+                new FileTool().writeToDataFolder(this);
             } else PermissionTool.reqPermission(this);
         }
     }
@@ -50,4 +49,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             PermissionTool.handlePermissionResult(this, requestCode, resultCode, data);
         }
     }
+
+
+
+
 }
