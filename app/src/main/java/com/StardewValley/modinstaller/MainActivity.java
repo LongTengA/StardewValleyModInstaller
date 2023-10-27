@@ -8,40 +8,41 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.content.Intent;
 import android.widget.Toast;
 
+import java.util.Queue;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     static final int REQ_DATA_FOLDER_PERMISSION = 1000;
-    static final int FIEL_COUNT = 1;
-    static final int PROGRESS_UPDATE = 2;
-    static final int PROGRESS_END = 3;
+
+    String filename;
     public Handler mainHandler = new Handler(Looper.myLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             switch (msg.what) {
-                case FIEL_COUNT: {
+                case UnZipper.FILE_SIZE: {
                     Bundle bundle = msg.getData();
-                    int count = bundle.getInt("FILESIZE");
-                    progressDialog.setMax(count);
+                    int size = bundle.getInt(UnZipper.DATA_KEY_FILESIZE);
+                    progressDialog.setMax(size);
                     progressDialog.show();
                     break;
                 }
-                case PROGRESS_UPDATE: {
+                case UnZipper.PROGRESS_UPDATE: {
                     Bundle bundle = msg.getData();
-                    int progress = bundle.getInt("PROGRESS");
+                    int progress = bundle.getInt(UnZipper.DATA_KEY_PROGRESS);
                     progressDialog.setProgress(progress);
+                    progressDialog.setMessage(bundle.getString(UnZipper.DATA_KEY_FILENAME));
                     break;
                 }
-                case PROGRESS_END: {
+                case UnZipper.PROGRESS_DONE: {
                     if (msg.arg1 == 1) {
                         new FileTool().writeToDataFolder(MainActivity.this, mainHandler);
                     }
                     progressDialog.dismiss();
-                    Toast.makeText(MainActivity.this, "完成！", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "安装完成！", Toast.LENGTH_SHORT).show();
                     break;
                 }
                 default:
@@ -60,8 +61,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMessage("解压中....");
-
+        progressDialog.setMessage("安装中......");
+        progressDialog.setCancelable(false);
     }
 
     @Override
@@ -74,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else PermissionTool.reqPermission(this);
         }
     }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

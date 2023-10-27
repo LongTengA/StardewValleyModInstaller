@@ -24,9 +24,6 @@ import kotlin.contracts.Returns;
 
 public class PermissionTool {
     static String path_to_data = "/storage/emulated/0/Android/data/com.zane.stardewvalley";
-    static String path_to_files = "/storage/emulated/0/Android/data/com.zane.stardewvalley/files";
-    static String path_to_stardew = "/storage/emulated/0/StardewValley";
-
     static boolean isGranted = false;
     static boolean isGranted2 = true;
 
@@ -38,6 +35,7 @@ public class PermissionTool {
             XXPermissions.with(activity)
                     // 申请单个权限
                     .permission(Permission.MANAGE_EXTERNAL_STORAGE)
+                    .permission(Permission.REQUEST_INSTALL_PACKAGES)
                     // 设置权限请求拦截器（局部设置）
                     //.interceptor(new PermissionInterceptor())
                     // 设置不触发错误检测机制（局部设置）
