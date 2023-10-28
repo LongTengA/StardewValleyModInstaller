@@ -8,16 +8,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.content.Intent;
 import android.widget.Toast;
+import android.os.Build;
 
-import java.util.Queue;
+import java.io.File;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    static final int REQ_DATA_FOLDER_PERMISSION = 1000;
 
-    String filename;
+    int state = 1;
+    boolean back = false;
+    private boolean running = true;
     public Handler mainHandler = new Handler(Looper.myLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
@@ -38,16 +42,61 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 }
                 case UnZipper.PROGRESS_DONE: {
-                    if (msg.arg1 == 1) {
-                        new FileTool().writeToDataFolder(MainActivity.this, mainHandler);
-                    }
+                    state++;
                     progressDialog.dismiss();
-                    Toast.makeText(MainActivity.this, "安装完成！", Toast.LENGTH_SHORT).show();
+                }
+                default:
+                    break;
+            }
+        }
+    };
+    Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            if (state == 8 && PermissionTool.isGranted2) state++;
+            if (state == 2 && PermissionTool.isGranted) state++;
+            Log.d("State", String.valueOf(state));
+            switch (state) {
+                case 1: {
+                    PermissionTool.reqExternalStorage(MainActivity.this);
+                    state++;
+                    break;
+                }
+                case 3: {
+                    new FileTool().writeToStardewalleyFolder(MainActivity.this, mainHandler);
+                    state++;
+                    break;
+                }
+                case 5: {
+                    LaunchApp();
+                    state++;
+                    break;
+                }
+                case 7: {
+                    PermissionTool.reqDataFolderPermission(MainActivity.this);
+                    state++;
+                    break;
+                }
+                case 9: {
+                    new FileTool().dealBeforeFiles(MainActivity.this, mainHandler);
+                    state++;
+                    break;
+                }
+                case 11: {
+                    new FileTool().writeToDataFolder(MainActivity.this, mainHandler);
+                    state++;
+                    break;
+                }
+                case 13: {
+                    running = false;
+                    state++;
+                    Toast.makeText(MainActivity.this, "安装完成!", Toast.LENGTH_LONG).show();
                     break;
                 }
                 default:
                     break;
             }
+            if (running) mainHandler.postDelayed(this, 500);
         }
     };
     ProgressDialog progressDialog;
@@ -56,31 +105,65 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        findViewById(R.id.button0).setOnClickListener(this);
+        PermissionTool.checkPermisssion(MainActivity.this);
         findViewById(R.id.button1).setOnClickListener(this);
-
         progressDialog = new ProgressDialog(this);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMessage("安装中......");
+        progressDialog.setTitle("安装中，稍等片刻");
+        progressDialog.setMessage("解压中。");
         progressDialog.setCancelable(false);
     }
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.button0) {
-            PermissionTool.reqPermission(this);
-        } else if (v.getId() == R.id.button1) {
-            if (PermissionTool.isGranted) {
-                new FileTool().writeToStardewalleyFolder(this, mainHandler);
-            } else PermissionTool.reqPermission(this);
+        if (v.getId() == R.id.button1) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                mainHandler.post(runnable);
+            } else {
+                if (PermissionTool.isGranted) {
+                    new FileTool().writeToStardewalleyFolder(this, mainHandler);
+                    new FileTool().writeToDataFolder(this, mainHandler);
+                    Toast.makeText(this, "安装成功！", Toast.LENGTH_SHORT).show();
+                    LaunchApp();
+                    this.finish();
+                } else {
+                    PermissionTool.reqExternalStorage(this);
+                    Toast.makeText(this, "请授权", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_DATA_FOLDER_PERMISSION) {
+        if (requestCode == PermissionTool.REQ_DATA_FOLDER_PERMISSION) {
             PermissionTool.handlePermissionResult(this, requestCode, resultCode, data);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 用户返回界面时执行操作
+        if (back && state == 6)
+            state++;
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (PermissionTool.isGranted)
+            back = true;
+    }
+
+    public void LaunchApp() {
+        String targetPackageName = "com.zane.stardewvalley";
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(targetPackageName);
+        if (launchIntent != null) {
+            startActivityForResult(launchIntent, 123);
+            Toast.makeText(this, "请点击OK授权！", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "请安装smapi星露谷物语", Toast.LENGTH_LONG).show();
         }
     }
 }

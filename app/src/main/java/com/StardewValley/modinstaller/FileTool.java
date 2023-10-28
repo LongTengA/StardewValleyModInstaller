@@ -41,6 +41,33 @@ public class FileTool {
         }).start();
     }
 
+
+    public void dealBeforeFiles(Context context, Handler handler) {
+        new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                        DocumentFile documentFile =
+                                creatLegalDocFileByPath(context, path_to_data + "/files/smapi-internal");
+                        if (documentFile.exists()) {
+                            documentFile.renameTo(documentFile.getName() + "备份");
+                        } else {
+                            Log.d("QWE", "不存在");
+                        }
+                        documentFile = creatLegalDocFileByPath(context, path_to_mods);
+                        if (documentFile.exists()) {
+                            documentFile.renameTo(documentFile.getName() + "备份");
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                UnzipMsgTool.progressDone(handler);
+            }
+        }.run();
+    }
+
     public void writeToDataFolder(Context content, Handler handler) {
         new Thread(new Runnable() {
             @Override
@@ -50,7 +77,9 @@ public class FileTool {
                         DocumentFile documentFile = creatLegalDocFileByPath(content, path_to_mods);
                         new UnZipper().unzipToDocumentFile(content, "Mod.zip", documentFile, handler);
                     } else {
-                        new UnZipper().unzip(content,"Mod.zip", path_to_mods, handler);
+                        File p = new File(path_to_mods);
+                        FileTool.deleteFolderRecursively(p);
+                        new UnZipper().unzip(content, "Mod.zip", path_to_mods, handler);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -79,6 +108,7 @@ public class FileTool {
         if (documentFile == null || !documentFile.exists()) {
             return;
         }
+        Log.d("DELETE", documentFile.getName());
         if (documentFile.isDirectory()) {
             for (DocumentFile childFile : documentFile.listFiles()) {
                 deleteDocumentFileRecursively(context, childFile);
@@ -86,6 +116,7 @@ public class FileTool {
         }
         documentFile.delete();
     }
+
 
     public static String changeToUri(String path) {
         if (path.endsWith("/")) {

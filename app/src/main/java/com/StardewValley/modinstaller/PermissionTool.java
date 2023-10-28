@@ -18,6 +18,8 @@ import android.os.Build;
 import android.provider.DocumentsContract;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import kotlin.contracts.Returns;
@@ -25,17 +27,14 @@ import kotlin.contracts.Returns;
 public class PermissionTool {
     static String path_to_data = "/storage/emulated/0/Android/data/com.zane.stardewvalley";
     static boolean isGranted = false;
-    static boolean isGranted2 = true;
+    static boolean isGranted2 = false;
+    static final int REQ_DATA_FOLDER_PERMISSION = 1000;
 
-    private static void reqExternalStorage(Activity activity) {
-        if (XXPermissions.isGranted(activity, Permission.MANAGE_EXTERNAL_STORAGE)) {
-            isGranted = true;
-            return;
-        } else {
+    public static void reqExternalStorage(Activity activity) {
+        {
             XXPermissions.with(activity)
                     // 申请单个权限
                     .permission(Permission.MANAGE_EXTERNAL_STORAGE)
-                    .permission(Permission.REQUEST_INSTALL_PACKAGES)
                     // 设置权限请求拦截器（局部设置）
                     //.interceptor(new PermissionInterceptor())
                     // 设置不触发错误检测机制（局部设置）
@@ -66,15 +65,6 @@ public class PermissionTool {
         }
     }
 
-    static public void reqPermission(Activity activity) {
-        reqExternalStorage(activity);
-        //android10 以上处理
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
-            isGranted2 = false;
-            reqDataFolderPermission(activity);
-        }
-    }
-
     public static void reqDataFolderPermission(Activity activity) {
         Uri uri = Uri.parse(FileTool.changeToUri(path_to_data));
         DocumentFile documentFile = DocumentFile.fromTreeUri(activity, uri);
@@ -91,11 +81,30 @@ public class PermissionTool {
                             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             );
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, documentFile.getUri());
-            activity.startActivityForResult(intent, 1000);
+            activity.startActivityForResult(intent, REQ_DATA_FOLDER_PERMISSION);
         }
     }
 
+    public static void checkPermisssion(Activity activity) {
+        if (XXPermissions.isGranted(activity, Permission.MANAGE_EXTERNAL_STORAGE)) {
+            isGranted = true;
+        }
+        DocumentFile documentFile = DocumentFile.fromTreeUri(activity, Uri.parse(FileTool.changeToUri(path_to_data)));
+        if (documentFile.canRead() && documentFile.canWrite()) {
+            isGranted2 = true;
+        }
+
+    }
+
+
     public static void handlePermissionResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        String targetPackageName = "com.zane.stardewvalley";
+        Intent launchIntent = activity.getPackageManager().getLaunchIntentForPackage(targetPackageName);
+        if (launchIntent == null) {
+            Toast.makeText(activity, "请先安装smapi星露谷物语，再启动安装器安装！", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         if (resultCode == Activity.RESULT_OK) {
             Uri uri = data.getData();
             DocumentFile documentFile = DocumentFile.fromTreeUri(activity, uri);
@@ -107,7 +116,7 @@ public class PermissionTool {
                 activity.getContentResolver().takePersistableUriPermission(uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             } else {
-                Toast.makeText(activity, "没有获取到权限", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "权限被拒绝", Toast.LENGTH_SHORT).show();
             }
         }
     }

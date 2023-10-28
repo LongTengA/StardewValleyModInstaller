@@ -28,10 +28,13 @@ public class UnZipper {
     public static final String DATA_KEY_FILENAME = "FILE_NAME";
     public static final String DATA_KEY_FILESIZE = "FILE_SIZE";
 
+    int space = 1;
+
     public void unzip(Context context, String sourceName, String destDir, Handler handler) throws
             IOException {
-        UnzipMsgTool.sentTotalFiles(context, handler, sourceName);
         UnzipMsgTool unzipMsgTool = new UnzipMsgTool();
+        unzipMsgTool.sentTotalFiles(context, handler, sourceName);
+
         InputStream inputStream = context.getAssets().open(sourceName);
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(inputStream, Charset.forName("gbk"));
@@ -43,7 +46,7 @@ public class UnZipper {
                 newFile.mkdirs();
             } else {
                 new File(newFile.getParent()).mkdirs();
-                unzipMsgTool.sentFileNameMsg(handler, newFile.getName());
+                unzipMsgTool.sentFileNameMsg(handler, newFile.getName(), space);
                 OutputStream outputStream = new FileOutputStream(newFile);
                 int len;
                 while ((len = zis.read(buffer)) > 0) {
@@ -60,10 +63,11 @@ public class UnZipper {
 
     public void unzipToDocumentFile(Context context, String sourceName, DocumentFile
             destDir, Handler handler) throws IOException {
-        UnzipMsgTool.sentTotalFiles(context, handler, sourceName);
+        UnzipMsgTool unzipMsgTool = new UnzipMsgTool();
+        unzipMsgTool.sentTotalFiles(context, handler, sourceName);
 
         InputStream inputStream = context.getAssets().open(sourceName);
-        UnzipMsgTool unzipMsgTool = new UnzipMsgTool();
+
         Stack<DocumentFile> DFstack = new Stack<>();
         Stack<String> nameStack = new Stack<>();
         byte[] buffer = new byte[1024 * 4];
@@ -97,7 +101,7 @@ public class UnZipper {
                 }
                 tmpFileName = fileName.replace(nameStack.peek(), "");
                 tmpFile = DFstack.peek().createFile(null, tmpFileName);
-                unzipMsgTool.sentFileNameMsg(handler, tmpFileName);
+                unzipMsgTool.sentFileNameMsg(handler, tmpFileName, space);
                 OutputStream outputStream = context.getContentResolver().openOutputStream(tmpFile.getUri());
                 int len;
                 while ((len = zis.read(buffer)) > 0) {
@@ -127,6 +131,7 @@ public class UnZipper {
 }
 
 class UnzipMsgTool {
+    String fileName;
     Bundle update_data = new Bundle();
     Message message = new Message();
     int count = 0;
@@ -165,7 +170,7 @@ class UnzipMsgTool {
         handler.sendMessage(message);
     }
 
-    public void snetFileNameMsg(Handler handler, String fileName, int space) {
+    public void sentFileNameMsg(Handler handler, String fileName, int space) {
         if (count % space == 0) {
             sentFileNameMsg(handler, fileName);
         } else {
@@ -173,13 +178,15 @@ class UnzipMsgTool {
         }
     }
 
-    public static void sentTotalFiles(Context context, Handler handler, String sourceName) throws IOException {
+    public void sentTotalFiles(Context context, Handler handler, String sourceName) throws IOException {
         InputStream inputStream = context.getAssets().open(sourceName);
         int count = UnZipper.countFiles(inputStream);
+
         Bundle bundle = new Bundle();
         Message message = new Message();
         message.what = UnZipper.FILE_SIZE;
         bundle.putInt(UnZipper.DATA_KEY_FILESIZE, count);
+        bundle.putString(UnZipper.DATA_KEY_FILENAME, sourceName);
         message.setData(bundle);
         handler.sendMessage(message);
     }
